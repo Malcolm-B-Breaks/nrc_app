@@ -3,6 +3,8 @@ import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:provider/provider.dart';
 import 'package:nrc_app/providers/cart_provider.dart';
 import 'package:nrc_app/utils/routes.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:nrc_app/widgets/app_header.dart';
 
 class CardPaymentScreen extends StatefulWidget {
   static const String routeName = '/checkout/payment-info/card';
@@ -33,11 +35,12 @@ class _CardPaymentScreenState extends State<CardPaymentScreen> {
   Widget build(BuildContext context) {
     final cartProvider = Provider.of<CartProvider>(context);
     final total = cartProvider.total;
+    final appLocalizations = AppLocalizations.of(context)!;
     
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Card Details'),
-        elevation: 0,
+      appBar: AppHeader(
+        title: appLocalizations.cardDetails,
+        showBackButton: true,
       ),
       body: Stack(
         children: [
@@ -51,9 +54,9 @@ class _CardPaymentScreenState extends State<CardPaymentScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Card Information',
-                          style: TextStyle(
+                        Text(
+                          appLocalizations.cardInformation,
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -68,14 +71,14 @@ class _CardPaymentScreenState extends State<CardPaymentScreen> {
                           child: CardField(
                             onCardChanged: (card) {
                               setState(() {
-                                _cardError = card?.complete == true ? null : "Please complete card details";
+                                _cardError = card?.complete == true ? null : appLocalizations.completeCardDetails;
                                 _card = card;
                               });
                             },
                             decoration: InputDecoration(
                               border: InputBorder.none,
                               contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                              hintText: 'Card number',
+                              hintText: appLocalizations.cardNumber,
                               hintStyle: TextStyle(color: Colors.grey.shade400),
                             ),
                           ),
@@ -92,9 +95,9 @@ class _CardPaymentScreenState extends State<CardPaymentScreen> {
                             ),
                           ),
                         const SizedBox(height: 24),
-                        const Text(
-                          'Contact Information',
-                          style: TextStyle(
+                        Text(
+                          appLocalizations.contactInformation,
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -102,13 +105,13 @@ class _CardPaymentScreenState extends State<CardPaymentScreen> {
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _nameController,
-                          decoration: const InputDecoration(
-                            labelText: 'Name on Card',
-                            border: OutlineInputBorder(),
+                          decoration: InputDecoration(
+                            labelText: appLocalizations.nameOnCard,
+                            border: const OutlineInputBorder(),
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter the name on your card';
+                              return appLocalizations.enterNameOnCard;
                             }
                             return null;
                           },
@@ -116,17 +119,17 @@ class _CardPaymentScreenState extends State<CardPaymentScreen> {
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _emailController,
-                          decoration: const InputDecoration(
-                            labelText: 'Email',
-                            border: OutlineInputBorder(),
+                          decoration: InputDecoration(
+                            labelText: appLocalizations.email,
+                            border: const OutlineInputBorder(),
                           ),
                           keyboardType: TextInputType.emailAddress,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter your email';
+                              return appLocalizations.enterEmail;
                             }
                             if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                              return 'Please enter a valid email';
+                              return appLocalizations.enterValidEmail;
                             }
                             return null;
                           },
@@ -154,6 +157,8 @@ class _CardPaymentScreenState extends State<CardPaymentScreen> {
   }
 
   Widget _buildOrderSummary(BuildContext context, double total) {
+    final appLocalizations = AppLocalizations.of(context)!;
+    
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -172,9 +177,9 @@ class _CardPaymentScreenState extends State<CardPaymentScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Total:',
-                style: TextStyle(
+              Text(
+                '${appLocalizations.total}:',
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
@@ -198,9 +203,9 @@ class _CardPaymentScreenState extends State<CardPaymentScreen> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text(
-              'Review Payment',
-              style: TextStyle(fontSize: 16),
+            child: Text(
+              appLocalizations.reviewPayment,
+              style: const TextStyle(fontSize: 16),
             ),
           ),
         ],
@@ -215,7 +220,7 @@ class _CardPaymentScreenState extends State<CardPaymentScreen> {
 
     if (_card == null || !_card!.complete) {
       setState(() {
-        _cardError = 'Please complete your card information';
+        _cardError = AppLocalizations.of(context)!.completeCardInformation;
       });
       return;
     }

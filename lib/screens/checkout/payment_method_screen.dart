@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:nrc_app/providers/cart_provider.dart';
 import 'package:nrc_app/utils/routes.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:nrc_app/widgets/app_header.dart';
 
 enum PaymentMethod { creditCard, paypal }
 
@@ -14,11 +16,12 @@ class PaymentMethodScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final cartProvider = Provider.of<CartProvider>(context);
     final total = cartProvider.total;
+    final appLocalizations = AppLocalizations.of(context)!;
     
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Select Payment Method'),
-        elevation: 0,
+      appBar: AppHeader(
+        title: appLocalizations.selectPaymentMethod,
+        showBackButton: true,
       ),
       body: Column(
         children: [
@@ -28,9 +31,9 @@ class PaymentMethodScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Choose a payment method',
-                    style: TextStyle(
+                  Text(
+                    appLocalizations.choosePaymentMethod,
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -38,16 +41,16 @@ class PaymentMethodScreen extends StatelessWidget {
                   const SizedBox(height: 24),
                   _buildPaymentOption(
                     context,
-                    title: 'Credit Card',
-                    subtitle: 'Pay with Visa, Mastercard, etc.',
+                    title: appLocalizations.creditCard,
+                    subtitle: appLocalizations.payWithCreditCard,
                     icon: Icons.credit_card,
                     method: PaymentMethod.creditCard,
                   ),
                   const SizedBox(height: 16),
                   _buildPaymentOption(
                     context,
-                    title: 'PayPal',
-                    subtitle: 'Pay with your PayPal account',
+                    title: appLocalizations.paypal,
+                    subtitle: appLocalizations.payWithPaypal,
                     icon: Icons.account_balance_wallet,
                     method: PaymentMethod.paypal,
                   ),
@@ -112,6 +115,8 @@ class PaymentMethodScreen extends StatelessWidget {
   }
 
   Widget _buildOrderSummary(BuildContext context, double total) {
+    final appLocalizations = AppLocalizations.of(context)!;
+    
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -130,9 +135,9 @@ class PaymentMethodScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Total:',
-                style: TextStyle(
+              Text(
+                '${appLocalizations.total}:',
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),

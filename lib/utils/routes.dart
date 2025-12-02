@@ -9,6 +9,7 @@ class AppRoutes {
   static const String profile = '/profile';
   static const String contact = '/contact';
   static const String orders = '/orders';
+  static const String newsletter = '/newsletter';
   
   // Checkout flow routes
   static const String paymentMethod = '/checkout/payment-method';

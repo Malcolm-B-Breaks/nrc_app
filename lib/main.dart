@@ -4,14 +4,20 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_stripe/flutter_stripe.dart' hide Card;
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'services/payment_service.dart';
 import 'providers/cart_provider.dart';
+import 'providers/language_provider.dart';
 import 'models/cart_item.dart';
 import 'screens/checkout/payment_method_screen.dart';
 import 'screens/checkout/payment_info_screen.dart';
 import 'screens/checkout/paypal_screen.dart';
 import 'screens/checkout/payment_confirmation_screen.dart';
+import 'screens/newsletter_screen.dart';
 import 'utils/routes.dart';
+import 'widgets/language_selector.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'widgets/app_header.dart';
 
 // Custom icon for Discord
 class CustomIcons {
@@ -36,13 +42,15 @@ void main() async {
     dotenv.env['SUPPORT_EMAIL'] = 'support@example.com';
   }
   
-  // Create and initialize cart provider
+  // Create and initialize providers
   final cartProvider = CartProvider();
+  final languageProvider = LanguageProvider();
   
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider<CartProvider>.value(value: cartProvider),
+        ChangeNotifierProvider<LanguageProvider>.value(value: languageProvider),
       ],
       child: const MyApp(),
     ),
@@ -65,6 +73,9 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Get the current locale from the language provider
+    final languageProvider = Provider.of<LanguageProvider>(context);
+    
     return MaterialApp(
       title: 'NRC App',
       theme: ThemeData(
@@ -76,6 +87,15 @@ class MyApp extends StatelessWidget {
           foregroundColor: Colors.white,
         ),
       ),
+      // Localization configuration
+      locale: languageProvider.locale,
+      localizationsDelegates: [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
       routes: {
         AppRoutes.splash: (context) => const HomeScreen(),
         AppRoutes.login: (context) => const LoginScreen(),
@@ -85,6 +105,7 @@ class MyApp extends StatelessWidget {
         AppRoutes.profile: (context) => const ProfileScreen(),
         AppRoutes.contact: (context) => const ContactScreen(),
         AppRoutes.cart: (context) => const CartScreen(),
+        AppRoutes.newsletter: (context) => const NewsletterScreen(),
         // Checkout flow routes
         AppRoutes.paymentMethod: (context) => const PaymentMethodScreen(),
         AppRoutes.cardPayment: (context) => const CardPaymentScreen(),
@@ -101,22 +122,13 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final appLocalizations = AppLocalizations.of(context)!;
+    
     return Scaffold(
-      appBar: AppBar(
-        title: GestureDetector(
-          onTap: () => Navigator.pushReplacementNamed(context, AppRoutes.products),
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.computer, size: 28),
-              SizedBox(width: 8),
-              Text('NRC'),
-            ],
-          ),
-        ),
-        centerTitle: true,
+      appBar: AppHeader(
+        title: 'NRC',
       ),
-        body: Center(
+      body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -127,11 +139,11 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              'Nihon Retro Computers',
+              appLocalizations.appTitle,
               style: Theme.of(context).textTheme.headlineMedium,
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Be a Part of the Digital Resurrection',
               style: TextStyle(fontSize: 16),
             ),
@@ -148,7 +160,7 @@ class HomeScreen extends StatelessWidget {
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                   ),
-                  child: const Text('Sign In'),
+                  child: Text(appLocalizations.signIn),
                 ),
                 const SizedBox(width: 16),
                 ElevatedButton(
@@ -160,7 +172,7 @@ class HomeScreen extends StatelessWidget {
                     foregroundColor: Theme.of(context).primaryColor,
                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                   ),
-                  child: const Text('Register'),
+                  child: Text(appLocalizations.register),
                 ),
               ],
             ),
@@ -170,7 +182,7 @@ class HomeScreen extends StatelessWidget {
               onPressed: () {
                 Navigator.pushNamed(context, AppRoutes.profile);
               },
-              child: const Text('Test Profile Page'),
+              child: Text(appLocalizations.profile),
             ),
           ],
         ),
@@ -201,27 +213,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _login() {
     if (_formKey.currentState!.validate()) {
-      // For demo purposes, accept any input
+      // Navigate to products page after successful login
       Navigator.pushReplacementNamed(context, AppRoutes.products);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final appLocalizations = AppLocalizations.of(context)!;
+    
     return Scaffold(
-      appBar: AppBar(
-        title: GestureDetector(
-          onTap: () => Navigator.pushReplacementNamed(context, AppRoutes.products),
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.computer, size: 28),
-              SizedBox(width: 8),
-              Text('NRC'),
-            ],
-          ),
-        ),
-        centerTitle: true,
+      appBar: AppHeader(
+        title: appLocalizations.signIn,
+        showBackButton: true,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -230,23 +234,16 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 32),
-              Text(
-                'Nihon Retro Computers',
-                style: Theme.of(context).textTheme.headlineSmall,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
               TextFormField(
                 controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
+                decoration: InputDecoration(
+                  labelText: appLocalizations.email,
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.emailAddress,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter your email';
+                    return appLocalizations.pleaseEnterEmail;
                   }
                   return null;
                 },
@@ -254,14 +251,14 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _passwordController,
-                decoration: const InputDecoration(
-                  labelText: 'Password',
+                decoration: InputDecoration(
+                  labelText: appLocalizations.password,
                   border: OutlineInputBorder(),
                 ),
                 obscureText: true,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter your password';
+                    return appLocalizations.pleaseEnterPassword;
                   }
                   return null;
                 },
@@ -272,7 +269,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: const Text('Login'),
+                child: Text(appLocalizations.login),
               ),
               const SizedBox(height: 16),
               TextButton(
@@ -280,7 +277,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   // For testing, navigate directly to products
                   Navigator.pushReplacementNamed(context, AppRoutes.products);
                 },
-                child: const Text('Skip login (for testing)'),
+                child: Text(appLocalizations.skipLogin),
               ),
             ],
           ),
@@ -332,8 +329,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       
       // Show success message and navigate to profile page
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Registration successful!'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.registrationSuccessful),
           duration: Duration(seconds: 2),
         ),
       );
@@ -350,20 +347,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final appLocalizations = AppLocalizations.of(context)!;
+    
     return Scaffold(
-      appBar: AppBar(
-        title: GestureDetector(
-          onTap: () => Navigator.pushReplacementNamed(context, AppRoutes.products),
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.computer, size: 28),
-              SizedBox(width: 8),
-              Text('NRC'),
-            ],
-          ),
-        ),
-        centerTitle: true,
+      appBar: AppHeader(
+        title: appLocalizations.register,
+        showBackButton: true,
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -375,7 +364,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               children: [
                 const SizedBox(height: 32),
                 Text(
-                  'Create Account',
+                  appLocalizations.createAccount,
                   style: Theme.of(context).textTheme.headlineSmall,
                   textAlign: TextAlign.center,
                 ),
@@ -384,14 +373,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 // Name field
                 TextFormField(
                   controller: _nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Full Name',
+                  decoration: InputDecoration(
+                    labelText: appLocalizations.fullName,
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.person),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your name';
+                      return appLocalizations.pleaseEnterName;
                     }
                     return null;
                   },
@@ -401,19 +390,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 // Email field
                 TextFormField(
                   controller: _emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
+                  decoration: InputDecoration(
+                    labelText: appLocalizations.email,
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.email),
                   ),
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your email';
+                      return appLocalizations.pleaseEnterEmail;
                     }
                     // Simple email validation
                     if (!value.contains('@') || !value.contains('.')) {
-                      return 'Please enter a valid email';
+                      return appLocalizations.pleaseEnterValidEmail;
                     }
                     return null;
                   },
@@ -423,44 +412,44 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 // Password field
                 TextFormField(
                   controller: _passwordController,
-                  decoration: const InputDecoration(
-                    labelText: 'Password',
+                  decoration: InputDecoration(
+                    labelText: appLocalizations.password,
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.lock),
                   ),
                   obscureText: true,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter a password';
+                      return appLocalizations.pleaseEnterPassword;
                     }
                     if (value.length < 6) {
-                      return 'Password must be at least 6 characters';
+                      return appLocalizations.passwordMinLength;
                     }
                     return null;
                   },
                 ),
                 const SizedBox(height: 16),
                 
-                // Confirm Password field
+                // Confirm password field
                 TextFormField(
                   controller: _confirmPasswordController,
-                  decoration: const InputDecoration(
-                    labelText: 'Confirm Password',
+                  decoration: InputDecoration(
+                    labelText: appLocalizations.confirmPassword,
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.lock_outline),
                   ),
                   obscureText: true,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please confirm your password';
+                      return appLocalizations.pleaseConfirmPassword;
                     }
                     if (value != _passwordController.text) {
-                      return 'Passwords do not match';
+                      return appLocalizations.passwordsDoNotMatch;
                     }
                     return null;
                   },
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
                 
                 // Register button
                 ElevatedButton(
@@ -468,26 +457,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  child: const Text(
-                    'Create Account',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  child: Text(appLocalizations.register),
                 ),
                 const SizedBox(height: 16),
                 
-                // Sign in link
+                // Already have account link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('Already have an account?'),
+                    Text(appLocalizations.alreadyHaveAccount),
                     TextButton(
                       onPressed: () {
                         Navigator.pushReplacementNamed(context, AppRoutes.login);
                       },
-                      child: const Text('Sign In'),
+                      child: Text(appLocalizations.signIn),
                     ),
                   ],
                 ),
@@ -598,21 +581,12 @@ class _ProductScreenState extends State<ProductScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final appLocalizations = AppLocalizations.of(context)!;
+    
     return Scaffold(
-      appBar: AppBar(
-        title: GestureDetector(
-          onTap: () => Navigator.pushReplacementNamed(context, AppRoutes.products),
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.computer, size: 28),
-              SizedBox(width: 8),
-              Text('NRC'),
-            ],
-          ),
-        ),
-        centerTitle: true,
-        actions: [
+      appBar: AppHeader(
+        title: appLocalizations.products,
+        additionalActions: [
           // Layout toggle button
           IconButton(
             icon: Icon(_isGridView ? Icons.view_list : Icons.grid_view),
@@ -640,8 +614,8 @@ class _ProductScreenState extends State<ProductScreen> {
                   Navigator.pop(context);
                   Navigator.pushReplacementNamed(context, AppRoutes.products);
                 },
-                child: const Text(
-                  'Nihon Retro Computers',
+                child: Text(
+                  appLocalizations.appTitle,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 24,
@@ -650,8 +624,8 @@ class _ProductScreenState extends State<ProductScreen> {
               ),
             ),
             ListTile(
-              title: const Text(
-                'Products',
+              title: Text(
+                appLocalizations.products,
                 style: TextStyle(fontSize: 16),
               ),
               onTap: () {
@@ -660,8 +634,8 @@ class _ProductScreenState extends State<ProductScreen> {
               },
             ),
             ListTile(
-              title: const Text(
-                'Cart',
+              title: Text(
+                appLocalizations.cart,
                 style: TextStyle(fontSize: 16),
               ),
               onTap: () {
@@ -670,8 +644,8 @@ class _ProductScreenState extends State<ProductScreen> {
               },
             ),
             ListTile(
-              title: const Text(
-                'Profile',
+              title: Text(
+                appLocalizations.profile,
                 style: TextStyle(fontSize: 16),
               ),
               onTap: () {
@@ -680,8 +654,8 @@ class _ProductScreenState extends State<ProductScreen> {
               },
             ),
             ListTile(
-              title: const Text(
-                'Contact',
+              title: Text(
+                appLocalizations.contact,
                 style: TextStyle(fontSize: 16),
               ),
               onTap: () {
@@ -690,8 +664,8 @@ class _ProductScreenState extends State<ProductScreen> {
               },
             ),
             ListTile(
-              title: const Text(
-                'Logout',
+              title: Text(
+                appLocalizations.logout,
                 style: TextStyle(fontSize: 16),
               ),
               onTap: () {
@@ -706,8 +680,8 @@ class _ProductScreenState extends State<ProductScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(16),
-            child: const Text(
-              'Featured Products',
+            child: Text(
+              appLocalizations.featuredProducts,
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
           ),
@@ -880,33 +854,12 @@ class ProductDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final product = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
     final specifications = product['specifications'] as Map<String, dynamic>;
+    final appLocalizations = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pushReplacementNamed(context, AppRoutes.products),
-        ),
-        title: GestureDetector(
-          onTap: () => Navigator.pushReplacementNamed(context, AppRoutes.products),
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.computer, size: 28),
-              SizedBox(width: 8),
-              Text('NRC'),
-            ],
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.shopping_cart),
-            onPressed: () {
-              Navigator.pushNamed(context, AppRoutes.cart);
-            },
-          ),
-        ],
+      appBar: AppHeader(
+        title: appLocalizations.productDetails,
+        showBackButton: true,
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -960,9 +913,9 @@ class ProductDetailScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Description',
-                    style: TextStyle(
+                  Text(
+                    appLocalizations.description,
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -973,9 +926,9 @@ class ProductDetailScreen extends StatelessWidget {
                     style: const TextStyle(fontSize: 16),
                   ),
                   const SizedBox(height: 24),
-                  const Text(
-                    'Specifications',
-                    style: TextStyle(
+                  Text(
+                    appLocalizations.specifications,
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -1022,10 +975,10 @@ class ProductDetailScreen extends StatelessWidget {
                         );
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('${product['name']} added to cart'),
+                            content: Text(appLocalizations.addedToCart(product['name'] as String)),
                             duration: const Duration(seconds: 2),
                             action: SnackBarAction(
-                              label: 'VIEW CART',
+                              label: appLocalizations.viewCart,
                               onPressed: () {
                                 Navigator.pushNamed(context, AppRoutes.cart);
                               },
@@ -1036,9 +989,9 @@ class ProductDetailScreen extends StatelessWidget {
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      child: const Text(
-                        'Add to Cart',
-                        style: TextStyle(
+                      child: Text(
+                        appLocalizations.addToCart,
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -1055,7 +1008,7 @@ class ProductDetailScreen extends StatelessWidget {
   }
 }
 
-// ProfileScreen implementation
+// Profile Screen implementation
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -1064,37 +1017,20 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  // Mock user data
-  final Map<String, dynamic> _userData = {
-    'name': 'John Tanaka',
-    'email': 'john.tanaka@example.com',
-    'phone': '+81 90-1234-5678',
-    'location': 'Tokyo, Japan',
-    'bio': 'Vintage computer enthusiast with a passion for Japanese computing history.',
-    'socialMedia': {
-      'discord': 'john_tanaka#1234',
-      'twitter': '@john_tanaka',
-      'github': 'johntanaka',
-    }
-  };
-
-  final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _locationController = TextEditingController();
-  final _bioController = TextEditingController();
-  final _discordController = TextEditingController();
-  final _twitterController = TextEditingController();
-  final _githubController = TextEditingController();
+  bool _editMode = false;
+  bool _isLoading = false;
   
   final _formKey = GlobalKey<FormState>();
-  bool _isEditing = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUserData();
-  }
+  final _nameController = TextEditingController(text: 'Alex Tanaka');
+  final _emailController = TextEditingController(text: 'alex.tanaka@example.com');
+  final _phoneController = TextEditingController(text: '+81 90-1234-5678');
+  final _locationController = TextEditingController(text: 'Tokyo, Japan');
+  final _bioController = TextEditingController(
+    text: 'Retro computing enthusiast with a particular interest in Japanese computers from the 80s and 90s.'
+  );
+  final _discordController = TextEditingController(text: 'alextanaka#1234');
+  final _twitterController = TextEditingController(text: '@alextanaka');
+  final _githubController = TextEditingController(text: 'alextanaka');
 
   @override
   void dispose() {
@@ -1109,373 +1045,266 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.dispose();
   }
 
-  void _loadUserData() {
-    _nameController.text = _userData['name'] as String;
-    _emailController.text = _userData['email'] as String;
-    _phoneController.text = _userData['phone'] as String;
-    _locationController.text = _userData['location'] as String;
-    _bioController.text = _userData['bio'] as String;
-    
-    final socialMedia = _userData['socialMedia'] as Map<String, dynamic>;
-    _discordController.text = socialMedia['discord'] as String;
-    _twitterController.text = socialMedia['twitter'] as String;
-    _githubController.text = socialMedia['github'] as String;
-  }
-
-  void _toggleEdit() {
+  void _toggleEditMode() {
     setState(() {
-      _isEditing = !_isEditing;
+      _editMode = !_editMode;
     });
   }
 
-  void _saveProfile() {
+  Future<void> _saveProfile() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
-        _userData['name'] = _nameController.text;
-        _userData['email'] = _emailController.text;
-        _userData['phone'] = _phoneController.text;
-        _userData['location'] = _locationController.text;
-        _userData['bio'] = _bioController.text;
-        
-        final socialMedia = _userData['socialMedia'] as Map<String, dynamic>;
-        socialMedia['discord'] = _discordController.text;
-        socialMedia['twitter'] = _twitterController.text;
-        socialMedia['github'] = _githubController.text;
-        
-        _isEditing = false;
+        _isLoading = true;
       });
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Profile updated successfully'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      // Simulate network delay
+      await Future.delayed(const Duration(seconds: 1));
+      
+      setState(() {
+        _isLoading = false;
+        _editMode = false;
+      });
+      
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.profileSaved),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final appLocalizations = AppLocalizations.of(context)!;
+    
     return Scaffold(
-      appBar: AppBar(
-        title: GestureDetector(
-          onTap: () => Navigator.pushReplacementNamed(context, AppRoutes.products),
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.computer, size: 28),
-              SizedBox(width: 8),
-              Text('NRC'),
-            ],
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(_isEditing ? Icons.save : Icons.edit),
-            onPressed: _isEditing ? _saveProfile : _toggleEdit,
-          ),
-        ],
+      appBar: AppHeader(
+        title: appLocalizations.profile,
+        showBackButton: true,
       ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor,
-              ),
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.pushReplacementNamed(context, AppRoutes.products);
-                },
-                child: const Text(
-                  'Nihon Retro Computers',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                  ),
-                ),
-              ),
-            ),
-            ListTile(
-              title: const Text(
-                'Products',
-                style: TextStyle(fontSize: 16),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, AppRoutes.products);
-              },
-            ),
-            ListTile(
-              title: const Text(
-                'Cart',
-                style: TextStyle(fontSize: 16),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, AppRoutes.cart);
-              },
-            ),
-            ListTile(
-              title: const Text(
-                'Profile',
-                style: TextStyle(fontSize: 16),
-              ),
-              onTap: () => Navigator.pop(context),
-              selected: true,
-            ),
-            ListTile(
-              title: const Text(
-                'Contact',
-                style: TextStyle(fontSize: 16),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, AppRoutes.contact);
-              },
-            ),
-            ListTile(
-              title: const Text(
-                'Logout',
-                style: TextStyle(fontSize: 16),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, AppRoutes.splash);
-              },
-            ),
-          ],
-        ),
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Profile header with image
-                Center(
-                  child: Column(
-                    children: [
-                      Stack(
-                        children: [
-                          CircleAvatar(
-                            radius: 60,
-                            backgroundColor: Colors.grey[300],
-                            child: const Icon(
-                              Icons.person,
-                              size: 80,
-                              color: Colors.grey,
-                            ),
-                          ),
-                          if (_isEditing)
-                            Positioned(
-                              right: 0,
-                              bottom: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).primaryColor,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: IconButton(
-                                  icon: const Icon(
-                                    Icons.camera_alt,
-                                    color: Colors.white,
-                                  ),
-                                  onPressed: () {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Image upload not implemented yet'),
-                                        duration: Duration(seconds: 2),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Profile header with avatar and edit button
+                    Row(
+                      children: [
+                        const CircleAvatar(
+                          radius: 40,
+                          backgroundImage: NetworkImage('https://picsum.photos/200'),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              !_editMode
+                                  ? Text(
+                                      _nameController.text,
+                                      style: const TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
                                       ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        _isEditing ? 'Edit Profile' : 'Profile',
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
+                                    )
+                                  : TextFormField(
+                                      controller: _nameController,
+                                      decoration: InputDecoration(
+                                        labelText: appLocalizations.fullName,
+                                      ),
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return appLocalizations.pleaseEnterName;
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                              const SizedBox(height: 4),
+                              !_editMode
+                                  ? Text(
+                                      _emailController.text,
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                      ),
+                                    )
+                                  : TextFormField(
+                                      controller: _emailController,
+                                      decoration: InputDecoration(
+                                        labelText: appLocalizations.email,
+                                      ),
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return appLocalizations.pleaseEnterEmail;
+                                        }
+                                        if (!value.contains('@')) {
+                                          return appLocalizations.pleaseEnterValidEmail;
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 32),
-                
-                // Personal Information Section
-                const Text(
-                  'Personal Information',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                
-                // Name field
-                TextFormField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Name',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.person),
-                  ),
-                  enabled: _isEditing,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your name';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                
-                // Email field
-                TextFormField(
-                  controller: _emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.email),
-                  ),
-                  enabled: _isEditing,
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your email';
-                    }
-                    // Simple email validation
-                    if (!value.contains('@') || !value.contains('.')) {
-                      return 'Please enter a valid email';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                
-                // Phone field
-                TextFormField(
-                  controller: _phoneController,
-                  decoration: const InputDecoration(
-                    labelText: 'Phone',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.phone),
-                  ),
-                  enabled: _isEditing,
-                  keyboardType: TextInputType.phone,
-                ),
-                const SizedBox(height: 16),
-                
-                // Location field
-                TextFormField(
-                  controller: _locationController,
-                  decoration: const InputDecoration(
-                    labelText: 'Location',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.location_on),
-                  ),
-                  enabled: _isEditing,
-                ),
-                const SizedBox(height: 16),
-                
-                // Bio field
-                TextFormField(
-                  controller: _bioController,
-                  decoration: const InputDecoration(
-                    labelText: 'Bio',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.info),
-                    alignLabelWithHint: true,
-                  ),
-                  enabled: _isEditing,
-                  maxLines: 3,
-                ),
-                const SizedBox(height: 32),
-                
-                // Social Media Section
-                const Text(
-                  'Social Media',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                
-                // Discord field
-                TextFormField(
-                  controller: _discordController,
-                  decoration: const InputDecoration(
-                    labelText: 'Discord',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.chat),
-                    hintText: 'username#0000',
-                  ),
-                  enabled: _isEditing,
-                ),
-                const SizedBox(height: 16),
-                
-                // Twitter field
-                TextFormField(
-                  controller: _twitterController,
-                  decoration: const InputDecoration(
-                    labelText: 'Twitter',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.alternate_email),
-                    hintText: '@username',
-                  ),
-                  enabled: _isEditing,
-                ),
-                const SizedBox(height: 16),
-                
-                // GitHub field
-                TextFormField(
-                  controller: _githubController,
-                  decoration: const InputDecoration(
-                    labelText: 'GitHub',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.code),
-                    hintText: 'username',
-                  ),
-                  enabled: _isEditing,
-                ),
-                const SizedBox(height: 32),
-                
-                // Save button (only visible in edit mode)
-                if (_isEditing)
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _saveProfile,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      child: const Text(
-                        'Save Profile',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                        IconButton(
+                          icon: Icon(_editMode ? Icons.cancel : Icons.edit),
+                          onPressed: _toggleEditMode,
+                          tooltip: _editMode ? appLocalizations.cancel : appLocalizations.edit,
                         ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    // Contact Information Section
+                    Text(
+                      appLocalizations.contactInformation,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-              ],
+                    const SizedBox(height: 16),
+                    
+                    // Phone
+                    !_editMode
+                        ? ListTile(
+                            leading: const Icon(Icons.phone),
+                            title: Text(appLocalizations.phoneNumber),
+                            subtitle: Text(_phoneController.text),
+                            contentPadding: EdgeInsets.zero,
+                          )
+                        : TextFormField(
+                            controller: _phoneController,
+                            decoration: InputDecoration(
+                              labelText: appLocalizations.phoneNumber,
+                              prefixIcon: const Icon(Icons.phone),
+                            ),
+                          ),
+                    
+                    // Location
+                    !_editMode
+                        ? ListTile(
+                            leading: const Icon(Icons.location_on),
+                            title: Text(appLocalizations.location),
+                            subtitle: Text(_locationController.text),
+                            contentPadding: EdgeInsets.zero,
+                          )
+                        : TextFormField(
+                            controller: _locationController,
+                            decoration: InputDecoration(
+                              labelText: appLocalizations.location,
+                              prefixIcon: const Icon(Icons.location_on),
+                            ),
+                          ),
+                    
+                    const SizedBox(height: 24),
+                    
+                    // Bio Section
+                    Text(
+                      appLocalizations.about,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    !_editMode
+                        ? Text(_bioController.text)
+                        : TextFormField(
+                            controller: _bioController,
+                            decoration: InputDecoration(
+                              labelText: appLocalizations.bio,
+                              alignLabelWithHint: true,
+                            ),
+                            maxLines: 4,
+                          ),
+                    
+                    const SizedBox(height: 24),
+                    
+                    // Social Media Section
+                    Text(
+                      appLocalizations.socialMedia,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    // Discord
+                    !_editMode
+                        ? ListTile(
+                            leading: const Icon(CustomIcons.discord),
+                            title: const Text('Discord'),
+                            subtitle: Text(_discordController.text),
+                            contentPadding: EdgeInsets.zero,
+                          )
+                        : TextFormField(
+                            controller: _discordController,
+                            decoration: const InputDecoration(
+                              labelText: 'Discord',
+                              prefixIcon: Icon(CustomIcons.discord),
+                            ),
+                          ),
+                    
+                    // Twitter
+                    !_editMode
+                        ? ListTile(
+                            leading: const Icon(Icons.alternate_email),
+                            title: const Text('Twitter'),
+                            subtitle: Text(_twitterController.text),
+                            contentPadding: EdgeInsets.zero,
+                          )
+                        : TextFormField(
+                            controller: _twitterController,
+                            decoration: const InputDecoration(
+                              labelText: 'Twitter',
+                              prefixIcon: Icon(Icons.alternate_email),
+                            ),
+                          ),
+                    
+                    // GitHub
+                    !_editMode
+                        ? ListTile(
+                            leading: const Icon(Icons.code),
+                            title: const Text('GitHub'),
+                            subtitle: Text(_githubController.text),
+                            contentPadding: EdgeInsets.zero,
+                          )
+                        : TextFormField(
+                            controller: _githubController,
+                            decoration: const InputDecoration(
+                              labelText: 'GitHub',
+                              prefixIcon: Icon(Icons.code),
+                            ),
+                          ),
+                    
+                    const SizedBox(height: 32),
+                    
+                    // Save button in edit mode
+                    if (_editMode)
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _saveProfile,
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(appLocalizations.save),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ),
-      ),
     );
   }
 }
@@ -1489,409 +1318,228 @@ class ContactScreen extends StatefulWidget {
 }
 
 class _ContactScreenState extends State<ContactScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _subjectController = TextEditingController();
   final _messageController = TextEditingController();
-  
-  final _formKey = GlobalKey<FormState>();
-  bool _isSending = false;
-  bool _isSent = false;
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
-    _subjectController.dispose();
     _messageController.dispose();
     super.dispose();
   }
 
-  // Send email using URL launcher
-  Future<void> _sendEmail() async {
+  void _submitForm() {
     if (_formKey.currentState!.validate()) {
+      // In a real app, send the contact form data to a server
       setState(() {
-        _isSending = true;
+        _isSubmitting = true;
       });
-
-      try {
-        // Get email from environment variable
-        final supportEmail = dotenv.env['SUPPORT_EMAIL'] ?? 'support@example.com';
-        
-        // For iOS Simulator - show demo success without attempting email
-        final isSimulator = await _isRunningOnSimulator();
-        if (isSimulator) {
-          // Show informative message about simulator limitations
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Simulator detected - email client launch skipped. In real device, this would launch an email app.'),
-              duration: Duration(seconds: 4),
-            ),
-          );
-          
-          setState(() {
-            _isSending = false;
-            _isSent = true;
-            
-            // Clear the form
-            _nameController.clear();
-            _emailController.clear();
-            _subjectController.clear();
-            _messageController.clear();
-          });
-          return;
-        }
-        
-        // Prepare the email for real devices
-        final Uri emailUri = Uri(
-          scheme: 'mailto',
-          path: supportEmail,
-          query: encodeQueryParameters({
-            'subject': '${_subjectController.text} - Contact Form from ${_nameController.text}',
-            'body': 'Name: ${_nameController.text}\n'
-                'Email: ${_emailController.text}\n\n'
-                '${_messageController.text}'
-          }),
-        );
-
-        // Try to launch the email client
-        final canLaunch = await canLaunchUrl(emailUri);
-        if (canLaunch) {
-          final launched = await launchUrl(
-            emailUri,
-            mode: LaunchMode.externalApplication,
-          );
-          
-          if (launched) {
-            setState(() {
-              _isSending = false;
-              _isSent = true;
-              
-              // Clear the form
-              _nameController.clear();
-              _emailController.clear();
-              _subjectController.clear();
-              _messageController.clear();
-            });
-          } else {
-            _showEmailError('Could not open email client');
-          }
-        } else {
-          _showEmailError('No email client available');
-        }
-      } catch (e) {
-        _showEmailError('Error: $e');
-      }
-    }
-  }
-
-  // Helper function to detect if running on simulator
-  Future<bool> _isRunningOnSimulator() async {
-    // A simple check for iOS simulator - this is not exhaustive
-    // but works for our demo purposes
-    final uri = Uri.parse('mailto:test@example.com');
-    return !(await canLaunchUrl(uri));
-  }
-
-  void _showEmailError(String message) {
-    setState(() {
-      _isSending = false;
-    });
-    
-    if (mounted) {
-      // Show error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          duration: const Duration(seconds: 3),
-          action: SnackBarAction(
-            label: 'OK',
-            onPressed: () {},
-          ),
-        ),
-      );
       
-      // Since we're in debug/demo mode, show success UI anyway
-      setState(() {
-        _isSent = true;
+      // Simulate a network request
+      Future.delayed(const Duration(seconds: 2), () {
+        setState(() {
+          _isSubmitting = false;
+        });
         
-        // Clear the form
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.messageSentSuccessfully),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        
+        // Clear form fields
         _nameController.clear();
         _emailController.clear();
-        _subjectController.clear();
         _messageController.clear();
       });
     }
   }
 
-  // Helper function to encode query parameters
-  String? encodeQueryParameters(Map<String, String> params) {
-    return params.entries
-        .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
-        .join('&');
-  }
-
   @override
   Widget build(BuildContext context) {
+    final appLocalizations = AppLocalizations.of(context)!;
+    final supportEmail = dotenv.env['SUPPORT_EMAIL'] ?? 'support@example.com';
+    
     return Scaffold(
-      appBar: AppBar(
-        title: GestureDetector(
-          onTap: () => Navigator.pushReplacementNamed(context, AppRoutes.products),
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.computer, size: 28),
-              SizedBox(width: 8),
-              Text('NRC'),
-            ],
-          ),
-        ),
-        centerTitle: true,
-      ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor,
-              ),
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.pushReplacementNamed(context, AppRoutes.products);
-                },
-                child: const Text(
-                  'Nihon Retro Computers',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                  ),
-                ),
-              ),
-            ),
-            ListTile(
-              title: const Text(
-                'Products',
-                style: TextStyle(fontSize: 16),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, AppRoutes.products);
-              },
-            ),
-            ListTile(
-              title: const Text(
-                'Cart',
-                style: TextStyle(fontSize: 16),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, AppRoutes.cart);
-              },
-            ),
-            ListTile(
-              title: const Text(
-                'Profile',
-                style: TextStyle(fontSize: 16),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, AppRoutes.profile);
-              },
-            ),
-            ListTile(
-              title: const Text(
-                'Contact',
-                style: TextStyle(fontSize: 16),
-              ),
-              onTap: () => Navigator.pop(context),
-              selected: true,
-            ),
-            ListTile(
-              title: const Text(
-                'Logout',
-                style: TextStyle(fontSize: 16),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushReplacementNamed(context, AppRoutes.splash);
-              },
-            ),
-          ],
-        ),
+      appBar: AppHeader(
+        title: appLocalizations.contact,
+        showBackButton: true,
       ),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Contact form header
-                const Center(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                appLocalizations.contactUs,
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                appLocalizations.contactDescription,
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+              const SizedBox(height: 24),
+              
+              // Contact Methods
+              Card(
+                elevation: 2,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.email,
-                        size: 64,
-                        color: Colors.grey,
-                      ),
-                      SizedBox(height: 16),
                       Text(
-                        'Contact Us',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        appLocalizations.contactMethods,
+                        style: Theme.of(context).textTheme.titleLarge,
                       ),
-                      SizedBox(height: 8),
-                      Text(
-                        'Send us your questions or feedback',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey,
-                        ),
+                      const SizedBox(height: 16),
+                      
+                      // Email
+                      ListTile(
+                        leading: const Icon(Icons.email),
+                        title: Text(appLocalizations.email),
+                        subtitle: Text(supportEmail),
+                        onTap: () {
+                          launchUrl(Uri.parse('mailto:$supportEmail'));
+                        },
+                      ),
+                      
+                      // Phone
+                      ListTile(
+                        leading: const Icon(Icons.phone),
+                        title: Text(appLocalizations.phone),
+                        subtitle: const Text('+81 3-1234-5678'),
+                        onTap: () {
+                          launchUrl(Uri.parse('tel:+81312345678'));
+                        },
+                      ),
+                      
+                      // Social Media
+                      ListTile(
+                        leading: const Icon(CustomIcons.discord),
+                        title: Text(appLocalizations.discordServer),
+                        subtitle: const Text('NRC Community'),
+                        onTap: () {
+                          launchUrl(Uri.parse('https://discord.gg/nrc-community'));
+                        },
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 32),
-                
-                // Form fields
-                TextFormField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Name',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.person),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your name';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                
-                TextFormField(
-                  controller: _emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.email),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your email';
-                    }
-                    // Simple email validation
-                    if (!value.contains('@') || !value.contains('.')) {
-                      return 'Please enter a valid email';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                
-                TextFormField(
-                  controller: _subjectController,
-                  decoration: const InputDecoration(
-                    labelText: 'Subject',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.subject),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a subject';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                
-                TextFormField(
-                  controller: _messageController,
-                  decoration: const InputDecoration(
-                    labelText: 'Message',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.message),
-                    alignLabelWithHint: true,
-                  ),
-                  maxLines: 6,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your message';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 32),
-                
-                // Submit button
-                if (_isSent)
-                  const Center(
+              ),
+              
+              const SizedBox(height: 32),
+              
+              // Contact Form
+              Form(
+                key: _formKey,
+                child: Card(
+                  elevation: 2,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          Icons.check_circle,
-                          color: Colors.green,
-                          size: 48,
-                        ),
-                        SizedBox(height: 8),
                         Text(
-                          'Message sent!',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                          appLocalizations.sendMessage,
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        // Name Field
+                        TextFormField(
+                          controller: _nameController,
+                          decoration: InputDecoration(
+                            labelText: appLocalizations.fullName,
+                            border: const OutlineInputBorder(),
                           ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return appLocalizations.pleaseEnterName;
+                            }
+                            return null;
+                          },
                         ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Thank you for contacting us. We will get back to you soon.',
-                          textAlign: TextAlign.center,
+                        const SizedBox(height: 16),
+                        
+                        // Email Field
+                        TextFormField(
+                          controller: _emailController,
+                          decoration: InputDecoration(
+                            labelText: appLocalizations.email,
+                            border: const OutlineInputBorder(),
+                          ),
+                          keyboardType: TextInputType.emailAddress,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return appLocalizations.pleaseEnterEmail;
+                            }
+                            if (!value.contains('@') || !value.contains('.')) {
+                              return appLocalizations.pleaseEnterValidEmail;
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        // Message Field
+                        TextFormField(
+                          controller: _messageController,
+                          decoration: InputDecoration(
+                            labelText: appLocalizations.message,
+                            border: const OutlineInputBorder(),
+                            alignLabelWithHint: true,
+                          ),
+                          maxLines: 5,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return appLocalizations.pleaseEnterMessage;
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 24),
+                        
+                        // Submit Button
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _isSubmitting ? null : _submitForm,
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                            child: _isSubmitting
+                                ? Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(appLocalizations.sending),
+                                    ],
+                                  )
+                                : Text(appLocalizations.send),
+                          ),
                         ),
                       ],
                     ),
-                  )
-                else
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _isSending ? null : _sendEmail,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      child: _isSending
-                          ? const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 3,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                  ),
-                                ),
-                                SizedBox(width: 8),
-                                Text('Sending...'),
-                              ],
-                            )
-                          : const Text(
-                              'Send Message',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                    ),
                   ),
-              ],
-            ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -1905,20 +1553,12 @@ class CartScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final appLocalizations = AppLocalizations.of(context)!;
+    
     return Scaffold(
-      appBar: AppBar(
-        title: GestureDetector(
-          onTap: () => Navigator.pushReplacementNamed(context, AppRoutes.products),
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.computer, size: 28),
-              SizedBox(width: 8),
-              Text('NRC'),
-            ],
-          ),
-        ),
-        centerTitle: true,
+      appBar: AppHeader(
+        title: appLocalizations.cart,
+        showBackButton: true,
       ),
       drawer: Drawer(
         child: ListView(
@@ -1933,8 +1573,8 @@ class CartScreen extends StatelessWidget {
                   Navigator.pop(context);
                   Navigator.pushReplacementNamed(context, AppRoutes.products);
                 },
-                child: const Text(
-                  'Nihon Retro Computers',
+                child: Text(
+                  appLocalizations.appFullName,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 24,
@@ -1943,8 +1583,8 @@ class CartScreen extends StatelessWidget {
               ),
             ),
             ListTile(
-              title: const Text(
-                'Products',
+              title: Text(
+                appLocalizations.products,
                 style: TextStyle(fontSize: 16),
               ),
               onTap: () {
@@ -1953,16 +1593,16 @@ class CartScreen extends StatelessWidget {
               },
             ),
             ListTile(
-              title: const Text(
-                'Cart',
+              title: Text(
+                appLocalizations.cart,
                 style: TextStyle(fontSize: 16),
               ),
               onTap: () => Navigator.pop(context),
               selected: true,
             ),
             ListTile(
-              title: const Text(
-                'Profile',
+              title: Text(
+                appLocalizations.profile,
                 style: TextStyle(fontSize: 16),
               ),
               onTap: () {
@@ -1971,8 +1611,8 @@ class CartScreen extends StatelessWidget {
               },
             ),
             ListTile(
-              title: const Text(
-                'Contact',
+              title: Text(
+                appLocalizations.contact,
                 style: TextStyle(fontSize: 16),
               ),
               onTap: () {
@@ -1981,8 +1621,8 @@ class CartScreen extends StatelessWidget {
               },
             ),
             ListTile(
-              title: const Text(
-                'Logout',
+              title: Text(
+                appLocalizations.logout,
                 style: TextStyle(fontSize: 16),
               ),
               onTap: () {
@@ -2006,16 +1646,16 @@ class CartScreen extends StatelessWidget {
                     color: Colors.grey,
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Your cart is empty',
+                  Text(
+                    appLocalizations.yourCartIsEmpty,
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Add some products to your cart to get started',
+                  Text(
+                    appLocalizations.addProductsToStart,
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.grey,
@@ -2029,7 +1669,7 @@ class CartScreen extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                     ),
-                    child: const Text('Browse Products'),
+                    child: Text(appLocalizations.browseProducts),
                   ),
                 ],
               ),
@@ -2077,7 +1717,7 @@ class CartScreen extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    'Electronics',
+                                    appLocalizations.electronics,
                                     style: TextStyle(
                                       color: Colors.grey[600],
                                       fontSize: 14,
@@ -2153,7 +1793,7 @@ class CartScreen extends StatelessWidget {
                                     cartProvider.removeItem(cartItem.id);
                                   },
                                   color: Colors.red,
-                                  tooltip: 'Remove item',
+                                  tooltip: appLocalizations.removeFromCart,
                                 ),
                               ],
                             ),
@@ -2183,9 +1823,9 @@ class CartScreen extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'Total Items:',
-                          style: TextStyle(fontSize: 16),
+                        Text(
+                          appLocalizations.totalItems,
+                          style: const TextStyle(fontSize: 16),
                         ),
                         Text(
                           '${cartProvider.itemCount}',
@@ -2200,9 +1840,9 @@ class CartScreen extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'Total Amount:',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        Text(
+                          appLocalizations.totalAmount,
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                         Text(
                           '\$${cartProvider.total.toStringAsFixed(2)}',
@@ -2225,7 +1865,7 @@ class CartScreen extends StatelessWidget {
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 16),
                             ),
-                            child: const Text('Clear Cart'),
+                            child: Text(appLocalizations.clearCart),
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -2235,9 +1875,9 @@ class CartScreen extends StatelessWidget {
                             style: ElevatedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 16),
                             ),
-                            child: const Text(
-                              'Checkout',
-                              style: TextStyle(
+                            child: Text(
+                              appLocalizations.checkout,
+                              style: const TextStyle(
                                 fontSize: 16, 
                                 fontWeight: FontWeight.bold,
                               ),

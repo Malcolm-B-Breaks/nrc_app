@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class LanguageProvider extends ChangeNotifier {
-  static const String _languageCodeKey = 'languageCode';
-  static const String _countryCodeKey = 'countryCode';
+  static const String _languageKey = 'selected_language';
   
   Locale _locale = const Locale('en');
   
@@ -14,65 +12,58 @@ class LanguageProvider extends ChangeNotifier {
     _loadSavedLanguage();
   }
   
-  // Load the saved language from SharedPreferences
   Future<void> _loadSavedLanguage() async {
     final prefs = await SharedPreferences.getInstance();
-    final languageCode = prefs.getString(_languageCodeKey);
-    final countryCode = prefs.getString(_countryCodeKey);
+    final languageCode = prefs.getString(_languageKey);
     
     if (languageCode != null) {
-      _locale = Locale(languageCode, countryCode);
+      // Check if it's a language with a country code
+      if (languageCode.contains('_')) {
+        final parts = languageCode.split('_');
+        _locale = Locale(parts[0], parts[1]);
+      } else {
+        _locale = Locale(languageCode);
+      }
       notifyListeners();
     }
   }
-  
-  // Change the app language
+
   Future<void> changeLanguage(Locale locale) async {
-    // Check if the locale is supported
-    if (!AppLocalizations.supportedLocales.contains(locale)) {
-      return;
-    }
-    
     _locale = locale;
     
-    // Save the selected language
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_languageCodeKey, locale.languageCode);
     if (locale.countryCode != null) {
-      await prefs.setString(_countryCodeKey, locale.countryCode!);
+      await prefs.setString(_languageKey, '${locale.languageCode}_${locale.countryCode}');
     } else {
-      await prefs.remove(_countryCodeKey);
+      await prefs.setString(_languageKey, locale.languageCode);
     }
     
     notifyListeners();
   }
   
-  // Get the display name of the current language
-  String getCurrentLanguageName(BuildContext context) {
-    final localizations = AppLocalizations.of(context)!;
-    
+  String getLanguageDisplayName(BuildContext context) {
     switch (_locale.languageCode) {
       case 'en':
-        return localizations.english;
+        return 'English';
       case 'ja':
-        return localizations.japanese;
+        return '日本語';
       case 'es':
-        return localizations.spanish;
+        return 'Español';
       case 'zh':
         if (_locale.countryCode == 'CN') {
-          return localizations.mandarin;
+          return '中文 (普通话)';
         } else if (_locale.countryCode == 'HK') {
-          return localizations.cantonese;
+          return '中文 (廣東話)';
         }
-        return localizations.mandarin;
+        return '中文';
       case 'ko':
-        return localizations.korean;
+        return '한국어';
       case 'de':
-        return localizations.german;
+        return 'Deutsch';
       case 'fr':
-        return localizations.french;
+        return 'Français';
       default:
-        return localizations.english;
+        return 'English';
     }
   }
 } 

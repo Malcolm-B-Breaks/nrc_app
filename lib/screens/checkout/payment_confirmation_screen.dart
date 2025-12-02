@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:nrc_app/providers/cart_provider.dart';
 import 'package:nrc_app/services/payment_service.dart';
 import 'package:nrc_app/utils/routes.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:nrc_app/widgets/app_header.dart';
 
 class PaymentConfirmationScreen extends StatefulWidget {
   static const String routeName = '/checkout/payment-confirmation';
@@ -23,11 +25,12 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
     final cartProvider = Provider.of<CartProvider>(context);
     final items = cartProvider.items;
     final total = cartProvider.total;
+    final appLocalizations = AppLocalizations.of(context)!;
     
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Confirm Order'),
-        elevation: 0,
+      appBar: AppHeader(
+        title: appLocalizations.confirmOrder,
+        showBackButton: true,
       ),
       body: Stack(
         children: [
@@ -39,9 +42,9 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Order Summary',
-                        style: TextStyle(
+                      Text(
+                        appLocalizations.orderSummary,
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -49,13 +52,13 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
                       const SizedBox(height: 16),
                       ...items.map((item) => _buildOrderItem(item)),
                       const Divider(),
-                      _buildTotalRow('Subtotal', total),
-                      _buildTotalRow('Tax', total * 0.08),
-                      _buildTotalRow('Total', total * 1.08, isFinal: true),
+                      _buildTotalRow(appLocalizations.subtotal, total),
+                      _buildTotalRow(appLocalizations.tax, total * 0.08),
+                      _buildTotalRow(appLocalizations.total, total * 1.08, isFinal: true),
                       const SizedBox(height: 24),
-                      const Text(
-                        'Payment Method',
-                        style: TextStyle(
+                      Text(
+                        appLocalizations.paymentMethod,
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -81,18 +84,18 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
             ],
           ),
           if (_isProcessing)
-            const Positioned.fill(
+            Positioned.fill(
               child: ColoredBox(
-                color: Color(0x80000000),
+                color: const Color(0x80000000),
                 child: Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      CircularProgressIndicator(),
-                      SizedBox(height: 16),
+                      const CircularProgressIndicator(),
+                      const SizedBox(height: 16),
                       Text(
-                        'Processing payment...',
-                        style: TextStyle(
+                        appLocalizations.processingPayment,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -109,6 +112,8 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
   }
 
   Widget _buildOrderItem(dynamic item) {
+    final appLocalizations = AppLocalizations.of(context)!;
+    
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Row(
@@ -142,7 +147,7 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
                   ),
                 ),
                 Text(
-                  'Quantity: ${item.quantity}',
+                  '${appLocalizations.quantity}: ${item.quantity}',
                   style: TextStyle(
                     color: Colors.grey.shade600,
                     fontSize: 12,
@@ -190,6 +195,7 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
 
   Widget _buildPaymentMethodInfo(Map<String, dynamic> paymentDetails) {
     final isCard = paymentDetails['paymentMethod'] == 'creditCard';
+    final appLocalizations = AppLocalizations.of(context)!;
     
     return Container(
       padding: const EdgeInsets.all(16),
@@ -210,7 +216,7 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isCard ? 'Credit Card' : 'PayPal',
+                  isCard ? appLocalizations.creditCard : 'PayPal',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -218,14 +224,14 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
                 ),
                 if (isCard && paymentDetails['card'] != null)
                   Text(
-                    '${paymentDetails['card']['brand']} ending in ${paymentDetails['card']['last4']}',
+                    '${paymentDetails['card']['brand']} ${appLocalizations.endingIn} ${paymentDetails['card']['last4']}',
                     style: TextStyle(
                       color: Colors.grey.shade600,
                     ),
                   )
                 else if (!isCard)
                   Text(
-                    paymentDetails['email'] ?? 'PayPal Account',
+                    paymentDetails['email'] ?? appLocalizations.paypalAccount,
                     style: TextStyle(
                       color: Colors.grey.shade600,
                     ),
@@ -239,6 +245,8 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
   }
 
   Widget _buildActionButton(BuildContext context, Map<String, dynamic> paymentDetails, double total) {
+    final appLocalizations = AppLocalizations.of(context)!;
+    
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -251,17 +259,20 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
           ),
         ],
       ),
-      child: ElevatedButton(
-        onPressed: _isProcessing ? null : () => _processPayment(context, paymentDetails, total),
-        style: ElevatedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          onPressed: _isProcessing ? null : () => _processPayment(context, paymentDetails, total),
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 16),
           ),
-        ),
-        child: const Text(
-          'Place Order',
-          style: TextStyle(fontSize: 16),
+          child: Text(
+            appLocalizations.placeOrder,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
       ),
     );

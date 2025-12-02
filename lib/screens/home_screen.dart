@@ -1,114 +1,233 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:nrc_app/providers/product_provider.dart';
-import 'package:nrc_app/widgets/app_drawer.dart';
-import 'package:nrc_app/widgets/app_bar.dart';
-import 'package:nrc_app/widgets/product_card.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:nrc_app/utils/routes.dart';
+import 'package:nrc_app/widgets/app_header.dart';
+import 'package:nrc_app/widgets/newsletter_subscription.dart';
 
-class HomeScreen extends StatefulWidget {
+/// A screen that serves as the landing page of the application.
+/// Displays the app title, slogan, authentication options, and newsletter signup.
+class HomeScreen extends StatelessWidget {
+  /// Creates a new instance of [HomeScreen].
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  String _selectedCategory = 'All';
-
-  @override
-  void initState() {
-    super.initState();
-    // Load products when screen initializes
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<ProductProvider>(context, listen: false).loadProducts();
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final productProvider = Provider.of<ProductProvider>(context);
-    final isLoading = productProvider.isLoading;
-    final products = productProvider.filteredProducts;
-    final categories = productProvider.categories;
-
+    final appLocalizations = AppLocalizations.of(context)!;
+    
     return Scaffold(
-      appBar: const CustomAppBar(),
-      drawer: const AppDrawer(),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                // Category filter
-                Container(
-                  height: 50,
-                  color: Colors.grey[200],
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: categories.length,
-                    itemBuilder: (context, index) {
-                      final category = categories[index];
-                      final isSelected = category == _selectedCategory;
-                      
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: ChoiceChip(
-                          label: Text(category),
-                          selected: isSelected,
-                          onSelected: (selected) {
-                            setState(() {
-                              _selectedCategory = category;
-                            });
-                            productProvider.filterByCategory(
-                              category == 'All' ? '' : category,
-                            );
-                          },
-                        ),
-                      );
-                    },
-                  ),
+      appBar: AppHeader(
+        title: 'NRC',
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Hero Section
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Theme.of(context).primaryColor.withOpacity(0.8),
+                    Theme.of(context).primaryColor.withOpacity(0.4),
+                  ],
                 ),
-                
-                // Featured section
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.computer,
+                    size: 80,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    appLocalizations.appFullName,
+                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    appLocalizations.appSlogan,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Colors.white,
+                      fontStyle: FontStyle.italic,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+            
+            // Action Buttons Section
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        'Featured Products',
-                        style: Theme.of(context).textTheme.titleLarge,
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pushNamed(context, AppRoutes.login);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).primaryColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          child: Text(appLocalizations.signIn),
+                        ),
                       ),
-                      TextButton(
-                        onPressed: () {
-                          // View all products
-                        },
-                        child: const Text('View All'),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pushNamed(context, AppRoutes.register);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: Theme.of(context).primaryColor,
+                            side: BorderSide(
+                              color: Theme.of(context).primaryColor,
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          child: Text(appLocalizations.register),
+                        ),
                       ),
                     ],
                   ),
+                  const SizedBox(height: 12),
+                  OutlinedButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, AppRoutes.products);
+                    },
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: Text(appLocalizations.browseProducts),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Newsletter Section
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              child: NewsletterSubscriptionWidget(
+                onSubscriptionSuccess: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(appLocalizations.subscriptionSuccessful),
+                      backgroundColor: Colors.green,
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                },
+              ),
+            ),
+            
+            // Features Section
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Why Choose NRC?',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildFeatureItem(
+                    context,
+                    icon: Icons.shopping_cart_outlined,
+                    title: 'Easy Shopping',
+                    description: 'Browse and purchase retro computers with ease',
+                  ),
+                  const SizedBox(height: 12),
+                  _buildFeatureItem(
+                    context,
+                    icon: Icons.local_shipping_outlined,
+                    title: 'Fast Delivery',
+                    description: 'Quick and reliable shipping worldwide',
+                  ),
+                  const SizedBox(height: 12),
+                  _buildFeatureItem(
+                    context,
+                    icon: Icons.security_outlined,
+                    title: 'Secure Payments',
+                    description: 'Safe payment options including Stripe and PayPal',
+                  ),
+                  const SizedBox(height: 12),
+                  _buildFeatureItem(
+                    context,
+                    icon: Icons.support_agent_outlined,
+                    title: 'Customer Support',
+                    description: 'Dedicated support team ready to help',
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildFeatureItem(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String description,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey[300]!),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            icon,
+            size: 28,
+            color: Theme.of(context).primaryColor,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
                 ),
-                
-                // Products grid
-                Expanded(
-                  child: products.isEmpty
-                      ? const Center(child: Text('No products found'))
-                      : GridView.builder(
-                          padding: const EdgeInsets.all(16),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            childAspectRatio: 0.7,
-                            crossAxisSpacing: 10,
-                            mainAxisSpacing: 10,
-                          ),
-                          itemCount: products.length,
-                          itemBuilder: (context, index) {
-                            return ProductCard(product: products[index]);
-                          },
-                        ),
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
+          ),
+        ],
+      ),
     );
   }
 } 
