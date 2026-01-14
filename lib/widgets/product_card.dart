@@ -18,7 +18,7 @@ class ProductCard extends StatelessWidget {
       child: InkWell(
         onTap: () {
           Navigator.of(context).pushNamed(
-            AppRoutes.product,
+            AppRoutes.productDetail,
             arguments: product.id,
           );
         },

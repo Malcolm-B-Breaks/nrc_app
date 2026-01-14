@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nrc_app/models/cart_item.dart';
 import 'package:nrc_app/models/product.dart';
 import 'package:nrc_app/services/cart_service.dart';
@@ -42,6 +44,11 @@ class CartProvider with ChangeNotifier {
   }
   
   Future<void> updateItemQuantity(String itemId, int quantity) async {
+    // Prevent multiple simultaneous updates
+    if (_isLoading) {
+      return;
+    }
+    
     _setLoading(true);
     try {
       await _cartService.updateQuantity(itemId, quantity);
@@ -92,9 +99,25 @@ class CartProvider with ChangeNotifier {
     notifyListeners();
   }
   
-  // Add CartItem directly (for testing)
-  void addCartItem(CartItem item) {
+  // Add CartItem directly (for testing) - now persists to storage
+  Future<void> addCartItem(CartItem item) async {
     _items.add(item);
     notifyListeners();
+    
+    // Persist to SharedPreferences
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cartItemsJson = _items.map((item) => {
+        'id': item.id,
+        'name': item.name,
+        'price': item.price,
+        'imageUrl': item.imageUrl,
+        'quantity': item.quantity,
+      }).toList();
+      
+      await prefs.setString('user_cart', jsonEncode(cartItemsJson));
+    } catch (e) {
+      _setError('Error persisting cart item: $e');
+    }
   }
 } 

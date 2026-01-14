@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:nrc_app/widgets/app_header.dart';
 import 'package:nrc_app/widgets/newsletter_subscription.dart';
 import 'package:nrc_app/services/newsletter_service.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:nrc_app/l10n/app_localizations.dart';
 
 class NewsletterScreen extends StatefulWidget {
   static const String routeName = '/newsletter';
@@ -104,7 +104,7 @@ class _NewsletterScreenState extends State<NewsletterScreen> {
             ),
             const SizedBox(height: 12),
             _buildBenefitItem(
-              icon: Icons.notifications_outline,
+              icon: Icons.notifications_outlined,
               title: 'Latest News',
               description: 'Stay updated with retro computing news and trends',
             ),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nrc_app/services/newsletter_service.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:nrc_app/l10n/app_localizations.dart';
 
 class NewsletterSubscriptionWidget extends StatefulWidget {
   final VoidCallback? onSubscriptionSuccess;

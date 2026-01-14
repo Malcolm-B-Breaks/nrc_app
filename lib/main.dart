@@ -16,7 +16,7 @@ import 'screens/checkout/payment_confirmation_screen.dart';
 import 'screens/newsletter_screen.dart';
 import 'utils/routes.dart';
 import 'widgets/language_selector.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:nrc_app/l10n/app_localizations.dart';
 import 'widgets/app_header.dart';
 
 // Custom icon for Discord
@@ -46,6 +46,17 @@ void main() async {
   final cartProvider = CartProvider();
   final languageProvider = LanguageProvider();
   
+  // Initialize cart with a sample product for testing (before runApp so it's persisted)
+  await cartProvider.addCartItem(
+    CartItem(
+      id: 'sample-1',
+      name: 'Retro Computer Model X',
+      price: 299.99,
+      imageUrl: 'https://picsum.photos/id/60/200/200',
+      quantity: 1,
+    ),
+  );
+  
   runApp(
     MultiProvider(
       providers: [
@@ -53,17 +64,6 @@ void main() async {
         ChangeNotifierProvider<LanguageProvider>.value(value: languageProvider),
       ],
       child: const MyApp(),
-    ),
-  );
-  
-  // Initialize cart with a sample product for testing
-  cartProvider.addCartItem(
-    CartItem(
-      id: 'sample-1',
-      name: 'Retro Computer Model X',
-      price: 299.99,
-      imageUrl: 'https://picsum.photos/id/60/200/200',
-      quantity: 1,
     ),
   );
 }
@@ -1681,7 +1681,7 @@ class CartScreen extends StatelessWidget {
               Expanded(
                 child: ListView.builder(
                   padding: const EdgeInsets.all(16),
-                  itemCount: cartProvider.itemCount,
+                  itemCount: cartProvider.items.length,
                   itemBuilder: (ctx, index) {
                     final cartItem = cartProvider.items[index];
                     return Card(

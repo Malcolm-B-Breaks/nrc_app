@@ -80,8 +80,9 @@ class CartService {
   
   // Update cart item quantity
   Future<void> updateQuantity(String itemId, int quantity) async {
+    // If quantity is 0 or negative, remove the item
     if (quantity <= 0) {
-      removeFromCart(itemId);
+      await removeFromCart(itemId);
       return;
     }
     

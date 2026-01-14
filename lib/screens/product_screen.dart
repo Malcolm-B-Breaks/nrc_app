@@ -5,7 +5,7 @@ import 'package:nrc_app/providers/cart_provider.dart';
 import 'package:nrc_app/providers/product_provider.dart';
 import 'package:nrc_app/utils/dummy_image.dart';
 import 'package:nrc_app/widgets/app_bar.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:nrc_app/l10n/app_localizations.dart';
 import 'package:nrc_app/utils/routes.dart';
 import 'package:nrc_app/widgets/app_header.dart';
 
